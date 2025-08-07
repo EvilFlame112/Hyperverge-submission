@@ -1,0 +1,85 @@
+# SensAI Project - Root Level Gitignore
+
+# ===========================================
+# ENVIRONMENT VARIABLES & SECRETS
+# ===========================================
+.env*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+secrets.json
+secrets.yaml
+secrets.yml
+
+# ===========================================
+# BACKEND (Python/FastAPI)
+# ===========================================
+__pycache__/
+*.py[cod]
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.venv/
+venv/
+ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ===========================================
+# FRONTEND (Next.js/React)
+# ===========================================
+node_modules/
+.next/
+out/
+build/
+dist/
+*.log
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ===========================================
+# DATABASES
+# ===========================================
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+
+# ===========================================
+# IDE & OS FILES
+# ===========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ===========================================
+# DOCKER
+# ===========================================
+docker-compose.override.yml
+
+# ===========================================
+# LOGS & TEMP
+# ===========================================
+logs/
+*.log
+tmp/
+temp/
+
+# ===========================================
+# SENSITIVE PROJECT FILES
+# ===========================================
+uploads/
+ssl/
+*.crt
+*.key
+*.pem 

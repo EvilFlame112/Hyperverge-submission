@@ -1,0 +1,96 @@
+# Docker Compose Override for Local Development
+# This file is for local customizations and should not be committed to version control
+# Copy this file and modify as needed for your local development environment
+
+version: "3.8"
+
+services:
+  # Override for development-specific settings
+  sensai-api:
+    # Enable hot reload for development
+    command: >
+      bash -c "
+        python /src/startup.py &&
+        uvicorn api.main:app --host 0.0.0.0 --port 8001 --reload --log-level debug
+      "
+    # Mount source code for live reloading
+    volumes:
+      - ./src:/src
+      - sensai_data:/appdata
+      - sensai_logs:/appdata/logs
+    # Development environment variables
+    environment:
+      - ENV=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    # Development ports
+    ports:
+      - "8000:8001"
+    # Development health check (more frequent)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  sensai-public-api:
+    # Enable hot reload for development
+    command: >
+      bash -c "
+        python /src/startup.py &&
+        uvicorn api.public:app --host 0.0.0.0 --port 8001 --reload --log-level debug
+      "
+    # Mount source code for live reloading
+    volumes:
+      - ./src:/src
+      - sensai_data:/appdata
+      - sensai_logs:/appdata/logs
+    # Development environment variables
+    environment:
+      - ENV=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    # Development ports
+    ports:
+      - "8002:8001"
+    # Development health check (more frequent)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Optional: Add development tools
+  # Uncomment if you need additional development services
+
+  # pgadmin:
+  #   image: dpage/pgadmin4
+  #   container_name: sensai-pgadmin
+  #   environment:
+  #     - PGADMIN_DEFAULT_EMAIL=admin@sensai.com
+  #     - PGADMIN_DEFAULT_PASSWORD=admin
+  #   ports:
+  #     - "5050:80"
+  #   volumes:
+  #     - pgadmin_data:/var/lib/pgadmin
+  #   networks:
+  #     - sensai-network
+
+  # redis-commander:
+  #   image: rediscommander/redis-commander:latest
+  #   container_name: sensai-redis-commander
+  #   environment:
+  #     - REDIS_HOSTS=local:redis:6379
+  #   ports:
+  #     - "8081:8081"
+  #   depends_on:
+  #     - redis
+  #   networks:
+  #     - sensai-network
+
+# Additional volumes for development tools
+volumes:
+  # pgadmin_data:
+  #   driver: local

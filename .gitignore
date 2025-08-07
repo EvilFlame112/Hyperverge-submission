@@ -29,7 +29,11 @@ ENV/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Jupyter Notebooks (contain sensitive data)
+*.ipynb
 notebooks/
+experimental/notebooks/
 
 # ===========================================
 # FRONTEND (Next.js/React)

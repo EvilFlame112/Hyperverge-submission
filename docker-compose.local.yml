@@ -6,7 +6,7 @@ services:
       context: ./sensai-ai
       dockerfile: Dockerfile
       args:
-        - GOOGLE_CLIENT_ID=947471744441-r7b3r4j4aph98eep42ui1fkdvs2qaude.apps.googleusercontent.com
+        - GOOGLE_CLIENT_ID=temp
         - OPENAI_API_KEY=your_openai_api_key_here
         - ENV=development
         - S3_BUCKET_NAME=

@@ -6,7 +6,7 @@ services:
       context: ./sensai-ai
       dockerfile: Dockerfile
       args:
-        - GOOGLE_CLIENT_ID=your_google_client_id_here
+        - GOOGLE_CLIENT_ID=947471744441-r7b3r4j4aph98eep42ui1fkdvs2qaude.apps.googleusercontent.com
         - OPENAI_API_KEY=your_openai_api_key_here
         - ENV=development
         - S3_BUCKET_NAME=
@@ -41,8 +41,8 @@ services:
         - BACKEND_URL=http://localhost:8000
         - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
         - NEXT_PUBLIC_APP_URL=http://localhost:3000
-        - GOOGLE_CLIENT_ID=your_google_client_id_here
-        - GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+        - GOOGLE_CLIENT_ID=947471744441-r7b3r4j4aph98eep42ui1fkdvs2qaude.apps.googleusercontent.com
+        - GOOGLE_CLIENT_SECRET=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
         - JUDGE0_API_URL=LINK_TO_JUDGE0_API
     ports:
       - "3000:3000"

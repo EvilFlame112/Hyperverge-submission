@@ -71,6 +71,7 @@ Thumbs.db
 # DOCKER
 # ===========================================
 docker-compose.override.yml
+docker-compose.local.yml
 
 # ===========================================
 # LOGS & TEMP
@@ -79,6 +80,11 @@ logs/
 *.log
 tmp/
 temp/
+
+# Debugging scripts
+fix_db.py
+check_tables.py
+force_init_all_tables.py
 
 # ===========================================
 # SENSITIVE PROJECT FILES

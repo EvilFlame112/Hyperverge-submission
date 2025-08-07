@@ -54,6 +54,11 @@ course_generation_jobs_table_name = "course_generation_jobs"
 task_generation_jobs_table_name = "task_generation_jobs"
 org_api_keys_table_name = "org_api_keys"
 code_drafts_table_name = "code_drafts"
+learning_sessions_table_name = "learning_sessions"
+weekly_quests_table_name = "weekly_quests"
+quest_completions_table_name = "quest_completions"
+grace_tokens_table_name = "grace_tokens"
+leaderboard_cache_table_name = "leaderboard_cache"
 
 UPLOAD_FOLDER_NAME = "uploads"
 

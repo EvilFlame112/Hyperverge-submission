@@ -27,6 +27,11 @@ from api.config import (
     task_generation_jobs_table_name,
     org_api_keys_table_name,
     code_drafts_table_name,
+    learning_sessions_table_name,
+    weekly_quests_table_name,
+    quest_completions_table_name,
+    grace_tokens_table_name,
+    leaderboard_cache_table_name,
 )
 
 
@@ -462,6 +467,147 @@ async def create_code_drafts_table(cursor):
     )
 
 
+async def create_learning_sessions_table(cursor):
+    """Table to track active learning sessions with quality metrics"""
+    await cursor.execute(
+        f"""CREATE TABLE IF NOT EXISTS {learning_sessions_table_name} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                task_id INTEGER,
+                question_id INTEGER,
+                session_start DATETIME NOT NULL,
+                session_end DATETIME,
+                total_minutes INTEGER DEFAULT 0,
+                active_minutes INTEGER DEFAULT 0,
+                interactions_count INTEGER DEFAULT 0,
+                learning_velocity REAL DEFAULT 0.0,
+                session_quality TEXT CHECK(session_quality IN ('high', 'medium', 'low')) DEFAULT 'medium',
+                is_completed BOOLEAN DEFAULT FALSE,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES {users_table_name}(id) ON DELETE CASCADE,
+                FOREIGN KEY (task_id) REFERENCES {tasks_table_name}(id) ON DELETE CASCADE,
+                FOREIGN KEY (question_id) REFERENCES {questions_table_name}(id) ON DELETE CASCADE
+            )"""
+    )
+
+    await cursor.execute(
+        f"""CREATE INDEX IF NOT EXISTS idx_learning_sessions_user_id ON {learning_sessions_table_name} (user_id)"""
+    )
+    await cursor.execute(
+        f"""CREATE INDEX IF NOT EXISTS idx_learning_sessions_task_id ON {learning_sessions_table_name} (task_id)"""
+    )
+    await cursor.execute(
+        f"""CREATE INDEX IF NOT EXISTS idx_learning_sessions_date ON {learning_sessions_table_name} (session_start)"""
+    )
+
+
+async def create_weekly_quests_table(cursor):
+    """Table to define weekly quests with requirements and rewards"""
+    await cursor.execute(
+        f"""CREATE TABLE IF NOT EXISTS {weekly_quests_table_name} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                quest_name TEXT NOT NULL,
+                description TEXT NOT NULL,
+                week_start DATE NOT NULL,
+                week_end DATE NOT NULL,
+                org_id INTEGER,
+                cohort_id INTEGER,
+                requirements JSON NOT NULL,
+                rewards JSON NOT NULL,
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (org_id) REFERENCES {organizations_table_name}(id) ON DELETE CASCADE,
+                FOREIGN KEY (cohort_id) REFERENCES {cohorts_table_name}(id) ON DELETE CASCADE
+            )"""
+    )
+
+    await cursor.execute(
+        f"""CREATE INDEX IF NOT EXISTS idx_weekly_quests_week ON {weekly_quests_table_name} (week_start, week_end)"""
+    )
+    await cursor.execute(
+        f"""CREATE INDEX IF NOT EXISTS idx_weekly_quests_org ON {weekly_quests_table_name} (org_id)"""
+    )
+
+
+async def create_quest_completions_table(cursor):
+    """Table to track user quest completions and progress"""
+    await cursor.execute(
+        f"""CREATE TABLE IF NOT EXISTS {quest_completions_table_name} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                quest_id INTEGER NOT NULL,
+                progress JSON NOT NULL,
+                is_completed BOOLEAN DEFAULT FALSE,
+                completed_at DATETIME,
+                points_earned INTEGER DEFAULT 0,
+                badges_earned JSON,
+                proof_data JSON,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, quest_id),
+                FOREIGN KEY (user_id) REFERENCES {users_table_name}(id) ON DELETE CASCADE,
+                FOREIGN KEY (quest_id) REFERENCES {weekly_quests_table_name}(id) ON DELETE CASCADE
+            )"""
+    )
+
+    await cursor.execute(
+        f"""CREATE INDEX IF NOT EXISTS idx_quest_completions_user_id ON {quest_completions_table_name} (user_id)"""
+    )
+    await cursor.execute(
+        f"""CREATE INDEX IF NOT EXISTS idx_quest_completions_quest_id ON {quest_completions_table_name} (quest_id)"""
+    )
+
+
+async def create_grace_tokens_table(cursor):
+    """Table to manage grace tokens for anti-cheat and user experience"""
+    await cursor.execute(
+        f"""CREATE TABLE IF NOT EXISTS {grace_tokens_table_name} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                token_type TEXT NOT NULL CHECK(token_type IN ('session_extension', 'quest_retry', 'streak_save', 'quality_adjustment')),
+                granted_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+                used_date DATETIME,
+                reason TEXT NOT NULL,
+                quest_id INTEGER,
+                session_id INTEGER,
+                is_used BOOLEAN DEFAULT FALSE,
+                expires_at DATETIME,
+                FOREIGN KEY (user_id) REFERENCES {users_table_name}(id) ON DELETE CASCADE,
+                FOREIGN KEY (quest_id) REFERENCES {weekly_quests_table_name}(id) ON DELETE CASCADE,
+                FOREIGN KEY (session_id) REFERENCES {learning_sessions_table_name}(id) ON DELETE CASCADE
+            )"""
+    )
+
+    await cursor.execute(
+        f"""CREATE INDEX IF NOT EXISTS idx_grace_tokens_user_id ON {grace_tokens_table_name} (user_id)"""
+    )
+    await cursor.execute(
+        f"""CREATE INDEX IF NOT EXISTS idx_grace_tokens_type ON {grace_tokens_table_name} (token_type)"""
+    )
+
+
+async def create_leaderboard_cache_table(cursor):
+    """Table to cache leaderboard calculations for performance"""
+    await cursor.execute(
+        f"""CREATE TABLE IF NOT EXISTS {leaderboard_cache_table_name} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                leaderboard_type TEXT NOT NULL CHECK(leaderboard_type IN ('course', 'cohort', 'topic', 'campus', 'global')),
+                scope_id INTEGER,
+                time_period TEXT NOT NULL CHECK(time_period IN ('weekly', 'monthly', 'all_time')),
+                leaderboard_data JSON NOT NULL,
+                last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+                expires_at DATETIME NOT NULL,
+                UNIQUE(leaderboard_type, scope_id, time_period)
+            )"""
+    )
+
+    await cursor.execute(
+        f"""CREATE INDEX IF NOT EXISTS idx_leaderboard_cache_type_scope ON {leaderboard_cache_table_name} (leaderboard_type, scope_id)"""
+    )
+    await cursor.execute(
+        f"""CREATE INDEX IF NOT EXISTS idx_leaderboard_cache_updated ON {leaderboard_cache_table_name} (last_updated)"""
+    )
+
+
 async def init_db():
     # Ensure the database folder exists
     db_folder = os.path.dirname(sqlite_db_path)
@@ -476,9 +622,48 @@ async def init_db():
         cursor = await conn.cursor()
 
         if exists(sqlite_db_path):
-            if not await check_table_exists(code_drafts_table_name, cursor):
-                await create_code_drafts_table(cursor)
-
+            # Check and create ALL tables for existing database (comprehensive check)
+            all_tables_to_check = [
+                # Core existing tables
+                (organizations_table_name, create_organizations_table),
+                (org_api_keys_table_name, create_org_api_keys_table),
+                (users_table_name, create_users_table),
+                (user_organizations_table_name, create_user_organizations_table),
+                (milestones_table_name, create_milestones_table),
+                (cohorts_table_name, create_cohort_tables),
+                (courses_table_name, create_courses_table),
+                (course_cohorts_table_name, create_course_cohorts_table),
+                (tasks_table_name, create_tasks_table),
+                (questions_table_name, create_questions_table),
+                (scorecards_table_name, create_scorecards_table),
+                (question_scorecards_table_name, create_question_scorecards_table),
+                (chat_history_table_name, create_chat_history_table),
+                (task_completions_table_name, create_task_completion_table),
+                (course_tasks_table_name, create_course_tasks_table),
+                (course_milestones_table_name, create_course_milestones_table),
+                (course_generation_jobs_table_name, create_course_generation_jobs_table),
+                (task_generation_jobs_table_name, create_task_generation_jobs_table),
+                (code_drafts_table_name, create_code_drafts_table),
+                # New gamification tables
+                (learning_sessions_table_name, create_learning_sessions_table),
+                (weekly_quests_table_name, create_weekly_quests_table),
+                (quest_completions_table_name, create_quest_completions_table),
+                (grace_tokens_table_name, create_grace_tokens_table),
+                (leaderboard_cache_table_name, create_leaderboard_cache_table),
+            ]
+            
+            missing_tables_created = False
+            for table_name, create_function in all_tables_to_check:
+                if not await check_table_exists(table_name, cursor):
+                    print(f"Creating missing table: {table_name}")
+                    await create_function(cursor)
+                    missing_tables_created = True
+            
+            if missing_tables_created:
+                print("✅ All missing tables created successfully!")
+            else:
+                print("✅ All tables already exist - database is complete!")
+            
             await conn.commit()
             return
 
@@ -520,6 +705,13 @@ async def init_db():
             await create_task_generation_jobs_table(cursor)
 
             await create_code_drafts_table(cursor)
+
+            # Gamification tables for active learning tracking
+            await create_learning_sessions_table(cursor)
+            await create_weekly_quests_table(cursor)
+            await create_quest_completions_table(cursor)
+            await create_grace_tokens_table(cursor)
+            await create_leaderboard_cache_table(cursor)
 
             await conn.commit()
 

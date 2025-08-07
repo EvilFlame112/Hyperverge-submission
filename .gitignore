@@ -29,6 +29,7 @@ ENV/
 .pytest_cache/
 .coverage
 htmlcov/
+notebooks/
 
 # ===========================================
 # FRONTEND (Next.js/React)
